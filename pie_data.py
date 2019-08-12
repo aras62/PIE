@@ -258,7 +258,7 @@ class PIE(object):
                    'traffic_direction': {0: 'OW', 1: 'TW'},
                    'signalized': {0: 'n/a', 1: 'C', 2: 'S', 3: 'CS'}}
 
-        return map_dic[label_type][str(value)]
+        return map_dic[label_type][value]
 
     def _get_annotations(self, setid, vid):
         """
