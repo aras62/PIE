@@ -818,7 +818,7 @@ class PIE(object):
                 'heading_angle': head_ang_seq,
                 'gps_coord': gpsc_seq,
                 'yrp': yrp_seq,
-                'intent': intent_seq}
+                'intention_prob': intent_seq}
 
     def _get_crossing(self, image_set, annotations, **params):
         """
@@ -936,7 +936,7 @@ class PIE(object):
                 'heading_angle': head_ang_seq,
                 'gps_coord': gpsc_seq,
                 'yrp': yrp_seq,
-                'intent': intent_seq,
+                'intention_prob': intent_seq,
                 'activities': activities,
                 'image_dimension': self._get_dim()}
 
