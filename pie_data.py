@@ -216,20 +216,22 @@ class PIE(object):
         """
         map_dic = {'occlusion': {'none': 0, 'part': 1, 'full': 2},
                    'action': {'standing': 0, 'walking': 1},
-                   'nod': {'__undefined__': 0, 'nodding': 1},
                    'look': {'not-looking': 0, 'looking': 1},
-                   'hand_gesture': {'__undefined__': 0, 'greet': 1, 'yield': 2,
-                                    'rightofway': 3, 'other': 4},
-                   'reaction': {'__undefined__': 0, 'clear_path': 1, 'speed_up': 2,
-                                'slow_down': 3},
-                   'cross': {'not-crossing': 0, 'crossing': 1},
+                   'gesture': {'__undefined__': 0, 'hand_ack': 1, 'hand_yield': 2,
+                                    'hand_rightofway': 3, 'nod': 4, 'other': 5},
+                   'cross': {'not-crossing': 0, 'crossing': 1, 'crossing-irrelevant': -1},
                    'age': {'child': 0, 'young': 1, 'adult': 2, 'senior': 3},
                    'designated': {'ND': 0, 'D': 1},
                    'gender': {'n/a': 0, 'female': 1, 'male': 2},
                    'intersection': {'midblock': 0, 'T': 1, 'T-left': 2, 'T-right': 3, 'four-way': 4},
                    'motion_direction': {'n/a': 0, 'LAT': 1, 'LONG': 2},
                    'traffic_direction': {'OW': 0, 'TW': 1},
-                   'signalized': {'n/a': 0, 'C': 1, 'S': 2, 'CS': 3}}
+                   'signalized': {'n/a': 0, 'C': 1, 'S': 2, 'CS': 3},
+                   'vehicle': {'car': 0, 'truck': 1, 'bus': 2, 'train': 3, 'bicycle': 4, 'bike': 5},
+                   'sign': {'ped_blue': 0, 'ped_yellow': 1, 'ped_white': 2, 'ped_text': 3, 'stop_sign': 4,
+                            'bus_stop': 5, 'train_stop': 6, 'construction': 7, 'other': 8},
+                   'traffic_light': {'regular': 0, 'transit': 1, 'pedestrian': 2},
+                   'state': {'__undefined__': 0, 'red': 1, 'yellow': 2, 'green': 3}}
 
         return map_dic[label_type][value]
 
@@ -242,21 +244,23 @@ class PIE(object):
         """
         map_dic = {'occlusion': {0: 'none', 1: 'part', 2: 'full'},
                    'action': {0: 'standing', 1: 'walking'},
-                   'nod': {0: '__undefined__', 1: 'nodding'},
                    'look': {0: 'not-looking', 1: 'looking'},
-                   'hand_gesture': {0: '__undefined__', 1: 'greet',
-                                    2: 'yield', 3: 'rightofway',
-                                    4: 'other'},
-                   'reaction': {0: '__undefined__', 1: 'clear_path',
-                                2: 'speed_up', 3: 'slow_down'},
-                   'cross': {0: 'not-crossing', 1: 'crossing'},
+                   'hand_gesture': {0: '__undefined__', 1: 'hand_ack',
+                                    2: 'hand_yield', 3: 'hand_rightofway',
+                                    4: 'nod', 5: 'other'},
+                   'cross': {0: 'not-crossing', 1: 'crossing', -1: 'crossing-irrelevant'},
                    'age': {0: 'child', 1: 'young', 2: 'adult', 3: 'senior'},
                    'designated': {0: 'ND', 1: 'D'},
                    'gender': {0: 'n/a', 1: 'female', 2: 'male'},
                    'intersection': {0: 'midblock', 1: 'T', 2: 'T-left', 3: 'T-right', 4: 'four-way'},
                    'motion_direction': {0: 'n/a', 1: 'LAT', 2: 'LONG'},
                    'traffic_direction': {0: 'OW', 1: 'TW'},
-                   'signalized': {0: 'n/a', 1: 'C', 2: 'S', 3: 'CS'}}
+                   'signalized': {0: 'n/a', 1: 'C', 2: 'S', 3: 'CS'},
+                   'vehicle': {0: 'car', 1: 'truck', 2: 'bus', 3: 'train', 4: 'bicycle', 5: 'bike'},
+                   'sign': {0: 'ped_blue', 1: 'ped_yellow', 2: 'ped_white', 3: 'ped_text', 4: 'stop_sign',
+                            5: 'bus_stop', 6: 'train_stop', 7: 'construction', 8: 'other'},
+                   'traffic_light': {0: 'regular', 1: 'transit', 2: 'pedestrian'},
+                   'state': {0: '__undefined__', 1: 'red', 2: 'yellow', 3: 'green'}}
 
         return map_dic[label_type][value]
 
@@ -272,37 +276,64 @@ class PIE(object):
 
         tree = ET.parse(path_to_file)
         ped_annt = 'ped_annotations'
+        traffic_annt = 'traffic_annotations'
 
         annotations = {}
         annotations['num_frames'] = int(tree.find("./meta/task/size").text)
         annotations['width'] = int(tree.find("./meta/task/original_size/width").text)
         annotations['height'] = int(tree.find("./meta/task/original_size/height").text)
         annotations[ped_annt] = {}
+        annotations[traffic_annt] = {}
 
-        ped_tracks = tree.findall("./track")
+        tracks = tree.findall('./track')
 
-        for t in ped_tracks:
+        for t in tracks:
             boxes = t.findall('./box')
-            ped_id = boxes[0].find('./attribute[@name=\"id\"]').text
-            annotations[ped_annt][ped_id] = {'frames': [], 'bbox': [], 'occlusion': []}
-            annotations['ped_annotations'][ped_id]['behavior'] = {'hand_gesture': [],
-                                                                  'look': [],
-                                                                  'action': [],
-                                                                  'nod': []}
+            obj_label = t.get('label')
+            obj_id = boxes[0].find('./attribute[@name=\"id\"]').text
 
-            for b in boxes:
-                annotations[ped_annt][ped_id]['bbox'].append(
-                    [float(b.get('xtl')), float(b.get('ytl')),
-                     float(b.get('xbr')), float(b.get('ybr'))])
-                occ = self._map_text_to_scalar('occlusion',
-                                               b.find('./attribute[@name=\"occlusion\"]').text)
-                annotations[ped_annt][ped_id]['occlusion'].append(occ)
-                annotations[ped_annt][ped_id]['frames'].append(int(b.get('frame')))
-                for beh in annotations['ped_annotations'][ped_id]['behavior'].keys():
-                    annotations[ped_annt][ped_id]['behavior'][beh].append(
-                        self._map_text_to_scalar(beh,
-                                                 b.find('./attribute[@name=\"' + beh + '\"]').text))
+            if obj_label == 'pedestrian':
+                annotations[ped_annt][obj_id] = {'frames': [], 'bbox': [], 'occlusion': []}
+                annotations[ped_annt][obj_id]['behavior'] = {'gesture': [], 'look': [], 'action': [], 'cross': []}
+                for b in boxes:
+                    # Exclude the annotations that are outside of the frame
+                    if int(b.get('outside')) == 1:
+                        continue
+                    annotations[ped_annt][obj_id]['bbox'].append(
+                        [float(b.get('xtl')), float(b.get('ytl')),
+                         float(b.get('xbr')), float(b.get('ybr'))])
+                    occ = self._map_text_to_scalar('occlusion', b.find('./attribute[@name=\"occlusion\"]').text)
+                    annotations[ped_annt][obj_id]['occlusion'].append(occ)
+                    annotations[ped_annt][obj_id]['frames'].append(int(b.get('frame')))
+                    for beh in annotations['ped_annotations'][obj_id]['behavior']:
+                        # Read behavior tags for each frame and add to the database
+                        annotations[ped_annt][obj_id]['behavior'][beh].append(
+                            self._map_text_to_scalar(beh, b.find('./attribute[@name=\"' + beh + '\"]').text))
 
+            else:
+                obj_type = boxes[0].find('./attribute[@name=\"type\"]')
+                if obj_type is not None:
+                    obj_type = self._map_text_to_scalar(obj_label,
+                                                        boxes[0].find('./attribute[@name=\"type\"]').text)
+
+                annotations[traffic_annt][obj_id] = {'frames': [], 'bbox': [], 'occlusion': [],
+                                                     'obj_class': obj_label,
+                                                     'obj_type': obj_type,
+                                                     'state': []}
+
+                for b in boxes:
+                    # Exclude the annotations that are outside of the frame
+                    if int(b.get('outside')) == 1:
+                        continue
+                    annotations[traffic_annt][obj_id]['bbox'].append(
+                        [float(b.get('xtl')), float(b.get('ytl')),
+                         float(b.get('xbr')), float(b.get('ybr'))])
+                    annotations[traffic_annt][obj_id]['occlusion'].append(int(b.get('occluded')))
+                    annotations[traffic_annt][obj_id]['frames'].append(int(b.get('frame')))
+                    annotations[traffic_annt][obj_id]['frames'].append(int(b.get('frame')))
+                    if obj_label == 'traffic_light':
+                        annotations[traffic_annt][obj_id]['frames'].append(self._map_text_to_scalar('state',
+                                                          b.find('./attribute[@name=\"state\"]').text))
         return annotations
 
     def _get_ped_attributes(self, setid, vid):
@@ -361,6 +392,14 @@ class PIE(object):
                 'num_frames': int
                 'width': int
                 'height': int
+                'traffic_annotations'(str): {
+                    'obj_id'(str): {
+                        'frames': list(int)
+                        'occlusion': list(int)
+                        'bbox': list([x1, y1, x2, y2]) (float)
+                        'obj_class': str,
+                        'obj_type': str,    # only for traffic lights, vehicles, signs
+                        'state': list(int)  # only for traffic lights
                 'ped_annotations'(str): {
                     'ped_id'(str): {
                         'frames': list(int)
@@ -368,9 +407,8 @@ class PIE(object):
                         'bbox': list([x1, y1, x2, y2]) (float)
                         'behavior'(str): {
                             'action': list(int)
-                            'reaction': list(int)
-                            'nod': list(int)
-                            'hand_gesture': list(int)
+                            'gesture': list(int)
+                            'cross': list(int)
                             'look': list(int)
                         'attributes'(str): {
                              'age': int
@@ -422,7 +460,6 @@ class PIE(object):
             video_ids = [v.split('_annt.xml')[0] for v in sorted(listdir(join(self._annotation_path,
                                                                               setid))) if v.endswith("annt.xml")]
             database[setid] = {}
-
             for vid in video_ids:
                 print('Getting annotations for %s, %s' % (setid, vid))
                 database[setid][vid] = self._get_annotations(setid, vid)
@@ -856,34 +893,9 @@ class PIE(object):
                     num_pedestrians += 1
 
                     frame_ids = pid_annots[pid]['frames']
-                    # avoid bounding boxes with width 1 or less
-                    correction_offset = 3
+                    event_frame = pid_annots[pid]['attributes']['crossing_point']
 
-                    event_frame = pid_annots[pid]['attributes']['crossing_point'] - correction_offset
-
-                    # # if pid_annots[pid]['attributes']['crossing_point'] < pid_annots[pid]['attributes']['critical_point']:
-                    # if pid_annots[pid]['attributes']['crossing'] < 1 and abs(event_frame - frame_ids[-1]) > 20:
-                    #
-                    #     # and \
-                    #     #         pid_annots[pid]['attributes']['crossing'] < 1:
-                    # 	print(pid)
-                    # 	# count += 1
-                    # 	# print(event_frame)
-                    # 	# print(frame_ids[-1])
-                    # 	# print(abs(event_frame - frame_ids[-1]))
-                    # elif pid_annots[pid]['attributes']['crossing'] < 1 and \
-                    #         abs(event_frame - frame_ids[-1]) > 20 :
-                    # 	continue
-                    # 	# print(pid)
-                    try:
-                        end_idx = frame_ids.index(event_frame)
-                    except:
-                        continue
-                    # print(pid)
-                    # print(event_frame)
-                    # print(frame_ids[0])
-                    # print(frame_ids[-1])
-
+                    end_idx = frame_ids.index(event_frame)
                     boxes = pid_annots[pid]['bbox'][:end_idx + 1]
                     frame_ids = frame_ids[: end_idx + 1]
                     images = [self._get_image_path(sid, vid, f) for f in frame_ids]
