@@ -4,17 +4,27 @@ Interface for the PIE dataset:
 A. Rasouli, I. Kotseruba, T. Kunic, and J. Tsotsos, "PIE: A Large-Scale Dataset and Models for Pedestrian Intention Estimation and
 Trajectory Prediction", ICCV 2019.
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+MIT License
 
-    http://www.apache.org/licenses/LICENSE-2.0
+Copyright (c) 2019 Amir Rasouli, Iuliia Kotseruba
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 
 """
 import pickle
@@ -24,7 +34,7 @@ import sys
 import xml.etree.ElementTree as ET
 import numpy as np
 
-from os.path import join, abspath, exists
+from os.path import join, abspath, isfile, isdir
 from os import makedirs, listdir
 from sklearn.model_selection import train_test_split, KFold
 
@@ -43,7 +53,7 @@ class PIE(object):
 
         # Paths
         self._pie_path = data_path if data_path else self._get_default_path()
-        assert exists(self._pie_path), \
+        assert isdir(self._pie_path), \
             'pie path does not exist: {}'.format(self._pie_path)
 
         self._annotation_path = join(self._pie_path, 'annotations')
@@ -57,17 +67,17 @@ class PIE(object):
     @property
     def cache_path(self):
         """
-        Generate a path to save cache files
+        Generates a path to save cache files
         :return: Cache file folder path
         """
         cache_path = abspath(join(self._pie_path, 'data_cache'))
-        if not exists(cache_path):
+        if not isdir(cache_path):
             makedirs(cache_path)
         return cache_path
 
     def _get_default_path(self):
         """
-        Return the default path where pie is expected to be installed.
+        Returns the default path where pie is expected to be installed.
         """
         return 'data/pie'
 
@@ -86,7 +96,7 @@ class PIE(object):
 
     def _get_image_path(self, sid, vid, fid):
         """
-        Generates the image path given ids
+        Generates and returns the image path given ids
         :param sid: Set id
         :param vid: Video id
         :param fid: Frame id
@@ -122,83 +132,128 @@ class PIE(object):
     # Data processing helpers
     def _get_width(self):
         """
-        Get image width
+        Returns image width
         :return: Image width
         """
         return 1920
 
     def _get_height(self):
         """
-        Get image height
+        Returns image height
         :return: Image height
         """
         return 1080
 
     def _get_dim(self):
         """
-        Gets the image dimensions
+        Returns the image dimensions
         :return: Image dimensions
         """
-        return (1920, 1080)
+        return 1920, 1080
 
     # Image processing helpers
-    def _squarify(self, bbox, ratio, img_width):
+    def get_annotated_frame_numbers(self, set_id):
         """
-        Changes is the ratio of bounding boxes to a fixed ratio
-        :param bbox: Bounding box
-        :param ratio: Ratio to be changed to
-        :param img_width: Image width
-        :return: Squarified boduning box
+        Generates and returns a dictionary of videos and annotated frames for each video in the give set
+        :param set_id: Set to generate annotated frames
+        :return: A dictionary of form
+                {<video_id>: [<number_of_frames>,<annotated_frame_id_0>,... <annotated_frame_id_n>]}
         """
-        width = abs(bbox[0] - bbox[2])
-        height = abs(bbox[1] - bbox[3])
-        width_change = height * ratio - width
 
-        bbox[0] = bbox[0] - width_change / 2
-        bbox[2] = bbox[2] + width_change / 2
+        print("Generating annotated frame numbers for", set_id)
+        annotated_frames_file = join(self._pie_path, "annotations", set_id, set_id + '_annotated_frames.csv')
+        # If the file exists, load from the file
+        if isfile(annotated_frames_file):
+            with open(annotated_frames_file, 'rt') as f:
+                annotated_frames = {x.split(',')[0]:
+                                        [int(fr) for fr in x.split(',')[1:]] for x in f.readlines()}
+            return annotated_frames
+        else:
+            # Generate annotated frame ids for each video
+            annotated_frames = {v.split('_annt.xml')[0]: [] for v in sorted(listdir(join(self._annotation_path,
+                                                                                         set_id))) if
+                                v.endswith("annt.xml")}
+            for vid, annot_frames in sorted(annotated_frames.items()):
+                _frames = []
+                path_to_file = join(self._annotation_path, set_id, vid + '_annt.xml')
+                tree = ET.parse(path_to_file)
+                tracks = tree.findall('./track')
+                for t in tracks:
+                    if t.get('label') != 'pedestrian':
+                        continue
+                    boxes = t.findall('./box')
+                    for b in boxes:
+                        # Exclude the annotations that are outside of the frame
+                        if int(b.get('outside')) == 1:
+                            continue
+                        _frames.append(int(b.get('frame')))
+                _frames = sorted(list(set(_frames)))
+                annot_frames.append(len(_frames))
+                annot_frames.extend(_frames)
 
-        if bbox[0] < 0:
-            bbox[0] = 0
+            with open(annotated_frames_file, 'wt') as fid:
+                for vid, annot_frames in sorted(annotated_frames.items()):
+                    fid.write(vid)
+                    for fr in annot_frames:
+                        fid.write("," + str(fr))
+                    fid.write('\n')
 
-        # check whether the new bounding box goes beyond image boarders
-        # If this is the case, the bounding box is shifted back
-        if bbox[2] > img_width:
-            bbox[0] = bbox[0] - bbox[2] + img_width
-            bbox[2] = img_width
-        return bbox
+        return annotated_frames
 
-    def extract_and_save_images(self):
+    def get_frame_numbers(self, set_id):
         """
-        Extract images from clips and saves on drive
+        Generates and returns a dictionary of videos and  frames for each video in the give set
+        :param set_id: Set to generate annotated frames
+        :return: A dictionary of form
+                {<video_id>: [<number_of_frames>,<frame_id_0>,... <frame_id_n>]}
+        """
+        print("Generating frame numbers for", set_id)
+        frame_ids = {v.split('_annt.xml')[0]: [] for v in sorted(listdir(join(self._annotation_path,
+                                                                              set_id))) if
+                     v.endswith("annt.xml")}
+        for vid, frames in sorted(frame_ids.items()):
+            path_to_file = join(self._annotation_path, set_id, vid + '_annt.xml')
+            tree = ET.parse(path_to_file)
+            num_frames = int(tree.find("./meta/task/size").text)
+            frames.extend([i for i in range(num_frames)])
+            frames.insert(0, num_frames)
+        return frame_ids
+
+    def extract_and_save_images(self, extract_frame_type='annotated'):
+        """
+        Extracts images from clips and saves on hard drive
+        :param extract_frame_type: Whether to extract 'all' frames or only the ones that are 'annotated'
+                             Note: extracting 'all' frames requires approx. 3TB space whereas
+                                   'annotated' requires approx. 1TB
         """
         set_folders = [f for f in sorted(listdir(self._clips_path))]
-        for set_num in set_folders:
-            print('Extracting frames from', set_num)
-            set_folder_path = join(self._clips_path, set_num)
-            frames_count_file = join(self._pie_path, "annotations", set_num, 'annotated_frames.csv')
-            set_images_path = join(self._pie_path, "images", set_num)
-            with open(frames_count_file, 'rt') as f:
-                vid_frames = [x.split(',') for x in f.readlines()]
+        for set_id in set_folders:
+            print('Extracting frames from', set_id)
+            set_folder_path = join(self._clips_path, set_id)
+            if extract_frame_type == 'annotated':
+                extract_frames = self.get_annotated_frame_numbers(set_id)
+            else:
+                extract_frames = self.get_frame_numbers(set_id)
 
-            for vf in vid_frames:
-                print(vf[0])
-                video_images_path = join(set_images_path, vf[0])
-                num_frames = int(vf[1])
-                frames_list = [int(f) for f in vf[2:]]
-
-                if not exists(video_images_path):
+            set_images_path = join(self._pie_path, "images", set_id)
+            for vid, frames in sorted(extract_frames.items()):
+                print(vid)
+                video_images_path = join(set_images_path, vid)
+                num_frames = frames[0]
+                frames_list = frames[1:]
+                if not isdir(video_images_path):
                     makedirs(video_images_path)
-                vidcap = cv2.VideoCapture(join(set_folder_path, vf[0] + '.mp4'))
+                vidcap = cv2.VideoCapture(join(set_folder_path, vid + '.mp4'))
                 success, image = vidcap.read()
                 frame_num = 0
                 img_count = 0
                 if not success:
-                    print('Failed to open the video {}'.format(vf[0]))
+                    print('Failed to open the video {}'.format(vid))
                 while success:
                     if frame_num in frames_list:
                         self.update_progress(img_count / num_frames)
                         img_count += 1
-                        if not exists(join(video_images_path, "%05.f.png") % frame_num):
+                        if not isfile(join(video_images_path, "%05.f.png") % frame_num):
                             cv2.imwrite(join(video_images_path, "%05.f.png") % frame_num, image)
                     success, image = vidcap.read()
                     frame_num += 1
@@ -218,8 +273,9 @@ class PIE(object):
                    'action': {'standing': 0, 'walking': 1},
                    'look': {'not-looking': 0, 'looking': 1},
                    'gesture': {'__undefined__': 0, 'hand_ack': 1, 'hand_yield': 2,
-                                    'hand_rightofway': 3, 'nod': 4, 'other': 5},
+                               'hand_rightofway': 3, 'nod': 4, 'other': 5},
                    'cross': {'not-crossing': 0, 'crossing': 1, 'crossing-irrelevant': -1},
+                   'crossing': {'not-crossing': 0, 'crossing': 1, 'irrelevant': -1},
                    'age': {'child': 0, 'young': 1, 'adult': 2, 'senior': 3},
                    'designated': {'ND': 0, 'D': 1},
                    'gender': {'n/a': 0, 'female': 1, 'male': 2},
@@ -249,6 +305,7 @@ class PIE(object):
                                     2: 'hand_yield', 3: 'hand_rightofway',
                                     4: 'nod', 5: 'other'},
                    'cross': {0: 'not-crossing', 1: 'crossing', -1: 'crossing-irrelevant'},
+                   'crossing': {0: 'not-crossing', 1: 'crossing', -1: 'irrelevant'},
                    'age': {0: 'child', 1: 'young', 2: 'adult', 3: 'senior'},
                    'designated': {0: 'ND', 1: 'D'},
                    'gender': {0: 'n/a', 1: 'female', 2: 'male'},
@@ -284,9 +341,7 @@ class PIE(object):
         annotations['height'] = int(tree.find("./meta/task/original_size/height").text)
         annotations[ped_annt] = {}
         annotations[traffic_annt] = {}
-
         tracks = tree.findall('./track')
-
         for t in tracks:
             boxes = t.findall('./box')
             obj_label = t.get('label')
@@ -333,12 +388,13 @@ class PIE(object):
                     annotations[traffic_annt][obj_id]['frames'].append(int(b.get('frame')))
                     if obj_label == 'traffic_light':
                         annotations[traffic_annt][obj_id]['frames'].append(self._map_text_to_scalar('state',
-                                                          b.find('./attribute[@name=\"state\"]').text))
+                                                                                                    b.find(
+                                                                                                        './attribute[@name=\"state\"]').text))
         return annotations
 
     def _get_ped_attributes(self, setid, vid):
         """
-        Generates a dictinary of attributes by parsing the video XML file
+        Generates a dictionary of attributes by parsing the video XML file
         :param setid: The set id
         :param vid: The video id
         :return: A dictionary of attributes
@@ -366,7 +422,7 @@ class PIE(object):
 
     def _get_vehicle_attributes(self, setid, vid):
         """
-        Generates a dictinary of vehicle attributes by parsing the video XML file
+        Generates a dictionary of vehicle attributes by parsing the video XML file
         :param setid: The set id
         :param vid: The video id
         :return: A dictionary of vehicle attributes (obd sensor recording)
@@ -385,7 +441,7 @@ class PIE(object):
 
     def generate_database(self):
         """
-        Generate a database of pie dataset by integrating all annotations
+        Generates and saves a database of the pie dataset by integrating all annotations
         Dictionary structure:
         'set_id'(str): {
             'vid_id'(str): {
@@ -442,7 +498,7 @@ class PIE(object):
         print("Generating database for pie")
 
         cache_file = join(self.cache_path, 'pie_database.pkl')
-        if exists(cache_file) and not self._regen_database:
+        if isfile(cache_file) and not self._regen_database:
             with open(cache_file, 'rb') as fid:
                 try:
                     database = pickle.load(fid)
@@ -476,7 +532,7 @@ class PIE(object):
 
     def get_data_stats(self):
         """
-        Generates statistics for jaad dataset
+        Generates statistics for the dataset
         """
         annotations = self.generate_database()
 
@@ -486,20 +542,67 @@ class PIE(object):
         ped_box_count = 0
         video_count = 0
         total_frames = 0
-        for sid in annotations:
-            video_count += len(annotations[sid])
-            for vid in annotations[sid]:
-                total_frames += annotations[sid][vid]['num_frames']
-                for ped in annotations[sid][vid]['ped_annotations']:
+        age = {'child': 0, 'adult': 0, 'senior': 0}
+        gender = {'male': 0, 'female': 0}
+        signalized = {'n/a': 0, 'C': 0, 'S': 0, 'CS': 0}
+        traffic_direction = {'OW': 0, 'TW': 0}
+        intersection = {'midblock': 0, 'T': 0, 'T-right': 0, 'T-left': 0, 'four-way': 0}
+        crossing = {'crossing': 0, 'not-crossing': 0, 'irrelevant': 0}
+
+        traffic_obj_types = {'vehicle': {'car': 0, 'truck': 0, 'bus': 0, 'train': 0, 'bicycle': 0, 'bike': 0},
+                             'sign': {'ped_blue': 0, 'ped_yellow': 0, 'ped_white': 0, 'ped_text': 0, 'stop_sign': 0,
+                                      'bus_stop': 0, 'train_stop': 0, 'construction': 0, 'other': 0},
+                             'traffic_light': {'regular': 0, 'transit': 0, 'pedestrian': 0},
+                             'crosswalk': 0,
+                             'transit_station': 0}
+        traffic_box_count = {'vehicle': 0, 'traffic_light': 0, 'sign': 0, 'crosswalk': 0, 'transit_station': 0}
+        for sid, vids in annotations.items():
+            video_count += len(vids)
+            for vid, annots in vids.items():
+                total_frames += annots['num_frames']
+                for trf_ids, trf_annots in annots['traffic_annotations'].items():
+                    obj_class = trf_annots['obj_class']
+                    traffic_box_count[obj_class] += len(trf_annots['frames'])
+                    if obj_class in ['traffic_light', 'vehicle', 'sign']:
+                        obj_type = trf_annots['obj_type']
+                        traffic_obj_types[obj_class][self._map_scalar_to_text(obj_class, obj_type)] += 1
+                    else:
+                        traffic_obj_types[obj_class] += 1
+                for ped_ids, ped_annots in annots['ped_annotations'].items():
                     ped_count += 1
-                    ped_box_count += len(annotations[sid][vid]['ped_annotations'][ped]['bbox'])
+                    ped_box_count += len(ped_annots['frames'])
+                    age[self._map_scalar_to_text('age', ped_annots['attributes']['age'])] += 1
+                    crossing[self._map_scalar_to_text('crossing', ped_annots['attributes']['crossing'])] += 1
+                    intersection[
+                        self._map_scalar_to_text('intersection', ped_annots['attributes']['intersection'])] += 1
+                    traffic_direction[self._map_scalar_to_text('traffic_direction',
+                                                               ped_annots['attributes']['traffic_direction'])] += 1
+                    signalized[self._map_scalar_to_text('signalized', ped_annots['attributes']['signalized'])] += 1
+                    gender[self._map_scalar_to_text('gender', ped_annots['attributes']['gender'])] += 1
 
         print('---------------------------------------------------------')
         print("Number of sets: %d" % set_count)
         print("Number of videos: %d" % video_count)
         print("Number of annotated frames: %d" % total_frames)
         print("Number of pedestrians %d" % ped_count)
+        print("age:\n", '\n '.join('{}: {}'.format(tag, cnt) for tag, cnt in sorted(age.items())))
+        print("gender:\n", '\n '.join('{}: {}'.format(tag, cnt) for tag, cnt in sorted(gender.items())))
+        print("signal:\n", '\n '.join('{}: {}'.format(tag, cnt) for tag, cnt in sorted(signalized.items())))
+        print("traffic direction:\n",
+              '\n '.join('{}: {}'.format(tag, cnt) for tag, cnt in sorted(traffic_direction.items())))
+        print("crossing:\n", '\n '.join('{}: {}'.format(tag, cnt) for tag, cnt in sorted(crossing.items())))
+        print("intersection:\n", '\n '.join('{}: {}'.format(tag, cnt) for tag, cnt in sorted(intersection.items())))
         print("Number of pedestrian bounding boxes: %d" % ped_box_count)
+        print("Number of traffic objects")
+        for trf_obj, values in sorted(traffic_obj_types.items()):
+            if isinstance(values, dict):
+                print(trf_obj + ':\n', '\n '.join('{}: {}'.format(k, v) for k, v in sorted(values.items())),
+                      '\n total: ', sum(values.values()))
+            else:
+                print(trf_obj + ': %d' % values)
+        print("Number of pedestrian bounding boxes:\n",
+              '\n '.join('{}: {}'.format(tag, cnt) for tag, cnt in sorted(traffic_box_count.items())),
+              '\n total: ', sum(traffic_box_count.values()))
 
     def balance_samples_count(self, seq_data, label_type, random_seed=42):
         """
@@ -561,7 +664,7 @@ class PIE(object):
     # Process pedestrian ids
     def _get_pedestrian_ids(self):
         """
-        Get all pedestrian ids
+        Returns all pedestrian ids
         :return: A list of pedestrian ids
         """
         annotations = self.generate_database()
@@ -573,7 +676,7 @@ class PIE(object):
 
     def _get_random_pedestrian_ids(self, image_set, ratios=None, val_data=True, regen_data=False):
         """
-        Generates and save a database of activities for all pedestriasns
+        Generates and saves a random pedestrian ids
         :param image_set: The data split to return
         :param ratios: The ratios to split the data. There should be 2 ratios (or 3 if val_data is true)
         and they should sum to 1. e.g. [0.4, 0.6], [0.3, 0.5, 0.2]
@@ -585,7 +688,7 @@ class PIE(object):
         assert image_set in ['train', 'test', 'val']
         # Generates a list of behavioral xml file names for  videos
         cache_file = join(self.cache_path, "random_samples.pkl")
-        if exists(cache_file) and not regen_data:
+        if isfile(cache_file) and not regen_data:
             print("Random sample currently exists.\n Loading from %s" % cache_file)
             with open(cache_file, 'rb') as fid:
                 try:
@@ -646,7 +749,7 @@ class PIE(object):
 
     def _get_kfold_pedestrian_ids(self, image_set, num_folds=5, fold=1):
         """
-        Generate kfold pedestrian ids
+        Generates kfold pedestrian ids
         :param image_set: Image set split
         :param num_folds: Number of folds
         :param fold: The given fold
@@ -657,7 +760,7 @@ class PIE(object):
         print("################ Generating %d fold data ################" % num_folds)
         cache_file = join(self.cache_path, "%d_fold_samples.pkl" % num_folds)
 
-        if exists(cache_file):
+        if isfile(cache_file):
             print("Loading %d-fold data from %s" % (num_folds, cache_file))
             with open(cache_file, 'rb') as fid:
                 try:
@@ -682,7 +785,7 @@ class PIE(object):
     # Trajectory data generation
     def _get_data_ids(self, image_set, params):
         """
-        A helper function to generate set id and ped ids (if needed) for processing
+        Generates set ids and ped ids (if needed) for processing
         :param image_set: Image-set to generate data
         :param params: Data generation params
         :return: Set and pedestrian ids
@@ -699,10 +802,35 @@ class PIE(object):
 
         return set_ids, _pids
 
+    def _squarify(self, bbox, ratio, img_width):
+        """
+        Changes the ratio of bounding boxes to a fixed ratio
+        :param bbox: Bounding box
+        :param ratio: Ratio to be changed to
+        :param img_width: Image width
+        :return: Squarified boduning box
+        """
+        width = abs(bbox[0] - bbox[2])
+        height = abs(bbox[1] - bbox[3])
+        width_change = height * ratio - width
+
+        bbox[0] = bbox[0] - width_change / 2
+        bbox[2] = bbox[2] + width_change / 2
+
+        if bbox[0] < 0:
+            bbox[0] = 0
+
+        # check whether the new bounding box goes beyond image boarders
+        # If this is the case, the bounding box is shifted back
+        if bbox[2] > img_width:
+            bbox[0] = bbox[0] - bbox[2] + img_width
+            bbox[2] = img_width
+        return bbox
+
     def _height_check(self, height_rng, frame_ids, boxes, images, occlusion):
         """
         Checks whether the bounding boxes are within a given height limit. If not, it
-        will adjust the length of data sequences accordingly
+        will adjust the length of bounding boxes in data sequences accordingly
         :param height_rng: Height limit [lower, higher]
         :param frame_ids: List of frame ids
         :param boxes: List of bounding boxes
@@ -813,8 +941,8 @@ class PIE(object):
 
                     if height_rng[0] > 0 or height_rng[1] < float('inf'):
                         images, boxes, frame_ids, occlusions = self._height_check(height_rng,
-                                                                                 frame_ids, boxes,
-                                                                                 images, occlusions)
+                                                                                  frame_ids, boxes,
+                                                                                  images, occlusions)
 
                     if len(boxes) / seq_stride < params['min_track_size']:  # max_obs_size: #90 + 45
                         continue
