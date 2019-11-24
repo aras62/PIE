@@ -4,7 +4,7 @@
 </p>
 <br/><br/>
 
-This repository contains  annotations for the Pedestrian Intetnion Estimation ([PIE](http://data.nvision2.eecs.yorku.ca/PIE_dataset/)) dataset. The annotations are in XML format and are accompanied with a python interface for processing.
+This repository contains  annotations for the Pedestrian Intention Estimation ([PIE](http://data.nvision2.eecs.yorku.ca/PIE_dataset/)) dataset. The annotations are in XML format and are accompanied by a python interface for processing.
 
 ### Table of contents
 * [Annotations](#annotations)
@@ -29,52 +29,48 @@ The occlusion values for pedestrians are either 0 (not occluded), 1 (partially o
 labels are either 0 (not occluded) or 1 (occluded).
 
 There are three types of labels:<br/>
-**Annotations**: These include object bounding box coordinates, occlusion information and frame id. Depending on the type of object additional 
-information are available:
+**Annotations**: These include object bounding box coordinates, occlusion information and frame id. Depending on the type of object additional information is available:
 
 * pedestrian
     * Action: Whether the pedestrian is `walking` or `standing`
     * Gesture: The type of gestures exhibited by the pedestrian. The gestures include  
-    `hand_ack` (pedestrian is acknowledging by hand gesture,`hand_yield` (pedestrian is yielding by hand gesture), 
-    `hand_rightofway` (pedestrian is giving right of way by hand gesture, `nod`, or `other`.
+    `hand_ack` (pedestrian is acknowledging by hand gesture),`hand_yield` (pedestrian is yielding by hand gesture), 
+    `hand_rightofway` (pedestrian is giving right of way by hand gesture), `nod`, or `other`.
     * Look: Whether pedestrian is `looking` or `not-looking`.
-    * Cross: Whether pedestrian is `not-crossing`, `crossing` in on the path of the vehicle and `crossing-irrelevant` which indicate the 
-    pedestrian is crossing the road but not on the path of the vehicle.
+    * Cross: Whether pedestrian is `not-crossing`, `crossing` the path of the ego-vehicle and `crossing-irrelevant` which indicates that the pedestrian is crossing the road but not in the path of the ego-vehicle.
 * vehicle
     * Type: The type of vehicle. The options are `car`, `truck`, `bus`, `train`, `bicycle` and `bike`.<br/>
 * traffic_light
     * Type: The type of traffic light. The options are `regular`, `transit` (specific to buses and trains) and `pedestrian`.
-    * State: The state of the traffic light. he options are `red`, `yellow` and 'green'.
+    * State: The state of the traffic light. The options are `red`, `yellow` and `green`.
 * sign
-    * Type: The type of sign. The options are `ped_blue`, `ped_yellow`, `ped_white`, `ped_text`, `stop_sign`,
-    `bus_stop`, `train_stop`, `construction`, `other`.
+    * Type: The type of sign. The options are `ped_blue`, `ped_yellow`, `ped_white`, `ped_text`, `stop_sign`, `bus_stop`, `train_stop`, `construction`, `other`.
 * crosswalk
 * transit_station
+    * bus or streetcar station
 
 These annotations are one per frame per label.<br/>
 **Attributes**: These include information regarding pedestrians' demographics, crossing point, crossing characteristics, etc. 
 The labels include
-* age:`child, adult, senior`.
-* gender: `male, female`.
+* age:`child`, `adult` and `senior`.
+* gender: `male`, `female`.
 * id: Pedestrian's id.
-* num_lanes: For example, 4.
-* signalized: Indicates whether the crosswalk is signalized. Options are `n/a` (no signal), `C` 
-(crosswalk lines or sign), `S` (signal) and `CS` (signal and crosswalk lines or sign).
+* num_lanes: scalar value, e.g. 2, 4.
+* signalized: Indicates whether the crosswalk is signalized. Options are `n/a` (no signal), `C` (crosswalk lines or sign), `S` (signal) and `CS` (signal and crosswalk lines or sign).
 * traffic_direction: `OW` (one-way) or `TW` (two-way).
-* intersection: Specifies the type of intersection. Options are `midblock, T, T-right, T-left, four-way`.
-* crossing: `1` (cross), `0` (not cross), `-1` (irrelevant).
+* intersection: Specifies the type of intersection. Options are `midblock`, `T`, `T-right`, `T-left`, `four-way`.
+* crossing: `1` (crossing), `0` (not crossing), `-1` (irrelevant).
 * exp_start_point: The starting frame of the experiment 
 * critical_point: The last frame of the experiment
 * intention_prob: A value in range `[0,1]` indicating the average responses for the pedestrian's intention. 
-* crossing_point: The frame at which the pedestrian starts crossing. In the cases where the pedestrians do not cross the road, 
-the last frame - 3 is selected. 
+* crossing_point: The frame at which the pedestrian starts crossing. In the cases where the pedestrians do not cross the road, the last frame - 3 is selected. 
 
-**Vehicle**: These are ego-vehicle sensor data. The options are
- `GPS_speed, OBD_speed, heading_angle, latitude, longitude, pitch, roll, yaw`.<br/>
+**Vehicle**: ego-vehicle sensor data. The options are
+ `GPS_speed`, `OBD_speed`, `heading_angle`, `latitude`, `longitude`, `pitch`, `roll`, `yaw`.<br/>
 
 <a name="clips"></a>
 # Video clips
-PIE contains 6 sets and 53 video clips. The clips in each set are continuous, meaning that they belong to a single recording that is divided into chunks. Each video is approximately 10 min long. These clips should be downloaded and placed in `PIE_clips` folder as follows:
+PIE contains 53 video clips split into 6 sets. The clips in each set are continuous, meaning that they belong to a single recording that is divided into chunks. Each video is approximately 10 min long. These clips should be downloaded and placed in `PIE_clips` folder as follows:
 ```
 PIE_clips/set01/video_0001.mp4
 PIE_clips/set01/video_0002.mp4
@@ -97,9 +93,7 @@ the following external libraries:<br/>
 ## Extracting images
 In order to use the data, first, the video clips should be converted into images. 
 There are to options to extract the images. The first option is to use script `split_clips_to_frames.sh`.
-This script will extract all images from the video clips. Note that this would require approx. 
-3TB space to save the images. Alternatively, one can use the interface to only extract annotated frames 
-(which would require 1TB space) as follows:
+This script will extract all images from the video clips. Note that this would require approx.  3TB space to save the images. Alternatively, one can use the interface to only extract annotated frames  (which would require 1TB space) as follows:
 
 ```
 from pie_data import PIE
