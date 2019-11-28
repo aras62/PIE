@@ -9,19 +9,17 @@ FRAMES_DIR=images  #path to the directory for frames
 ################################################################
 
 
-for set_dir in ${CLIPS_DIR}/set*
+for set_dir in set01 set02 set03 set04 set05 set06
 do
-    mkdir -p ${FRAMES_DIR}/${set_dir}
-    for file in ${FRAMES_DIR}/${set_dir}/*.mp4
+    for video in ${CLIPS_DIR}/${set_dir}/*
     do
-        filename=$(basename "$file")
+        filename=$(basename "$video")
         fname="${filename%.*}"
-        echo $fname
 
         #create a directory for each frame sequence
         mkdir -p ${FRAMES_DIR}/${set_dir}/$fname
         #FFMPEG will overwrite any existing images in that directory
-        ffmpeg  -y -i $file -start_number 0 -f image2 -qscale 1 ${FRAMES_DIR}/${set_dir}/$fname/%05d.png
-        fi
+        echo ffmpeg  -y -i $file -start_number 0 -f image2 -qscale 1 ${FRAMES_DIR}/${set_dir}/$fname/%05d.png
+        
     done
 done
