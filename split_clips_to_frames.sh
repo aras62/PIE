@@ -19,7 +19,7 @@ do
         #create a directory for each frame sequence
         mkdir -p ${FRAMES_DIR}/${set_dir}/$fname
         #FFMPEG will overwrite any existing images in that directory
-        ffmpeg  -y -i $file -start_number 0 -f image2 -qscale 1 ${FRAMES_DIR}/${set_dir}/$fname/%05d.png
+        ffmpeg  -y -i $video -start_number 0 -f image2 -qscale 1 ${FRAMES_DIR}/${set_dir}/$fname/%05d.png
         
     done
 done
