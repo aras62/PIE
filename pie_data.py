@@ -385,9 +385,8 @@ class PIE(object):
                          float(b.get('xbr')), float(b.get('ybr'))])
                     annotations[traffic_annt][obj_id]['occlusion'].append(int(b.get('occluded')))
                     annotations[traffic_annt][obj_id]['frames'].append(int(b.get('frame')))
-                    annotations[traffic_annt][obj_id]['frames'].append(int(b.get('frame')))
                     if obj_label == 'traffic_light':
-                        annotations[traffic_annt][obj_id]['frames'].append(self._map_text_to_scalar('state',
+                        annotations[traffic_annt][obj_id]['state'].append(self._map_text_to_scalar('state',
                                                                                                     b.find(
                                                                                                         './attribute[@name=\"state\"]').text))
         return annotations
