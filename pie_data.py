@@ -571,8 +571,13 @@ class PIE(object):
                     ped_count += 1
                     ped_box_count += len(ped_annots['frames'])
                     age[self._map_scalar_to_text('age', ped_annots['attributes']['age'])] += 1
-                    crossing[self._map_scalar_to_text('crossing', ped_annots['attributes']['crossing'])] += 1
-                    intersection[
+                    if self._map_scalar_to_text('crossing', ped_annots['attributes']['crossing']) == 'crossing':
+                        crossing[self._map_scalar_to_text('crossing', ped_annots['attributes']['crossing'])] += 1
+                    else:
+                        if ped_annots['attributes']['intention_prob'] > 0.5:
+                            crossing['not-crossing'] += 1
+                        else:
+                            crossing['irrelevant'] += 1                    intersection[
                         self._map_scalar_to_text('intersection', ped_annots['attributes']['intersection'])] += 1
                     traffic_direction[self._map_scalar_to_text('traffic_direction',
                                                                ped_annots['attributes']['traffic_direction'])] += 1
