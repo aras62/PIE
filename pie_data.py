@@ -490,6 +490,13 @@ class PIE(object):
                           'latitude': float
                           'longitude': float
                           'heading_angle': float
+                          'accX': float
+                          'accY': float
+                          'accZ: float
+                          'gyroX': float
+                          'gyroY': float
+                          'gyroZ': float
+
         :return: A database dictionary
         """
 
