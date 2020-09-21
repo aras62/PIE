@@ -66,7 +66,7 @@ The labels include
 * crossing_point: The frame at which the pedestrian starts crossing. In the cases where the pedestrians do not cross the road, the last frame - 3 is selected. 
 
 **Vehicle**: ego-vehicle sensor data. The options are
- `GPS_speed`, `OBD_speed`, `heading_angle`, `latitude`, `longitude`, `pitch`, `roll`, `yaw`.<br/>
+ `GPS_speed`, `OBD_speed`, `heading_angle`, `latitude`, `longitude`, `pitch`, `roll`, `yaw`, `acceleration` and `gyroscope`.<br/>
 
 <a name="clips"></a>
 # Video clips
