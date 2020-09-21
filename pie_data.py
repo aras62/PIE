@@ -577,7 +577,8 @@ class PIE(object):
                         if ped_annots['attributes']['intention_prob'] > 0.5:
                             crossing['not-crossing'] += 1
                         else:
-                            crossing['irrelevant'] += 1                    intersection[
+                            crossing['irrelevant'] += 1                    
+                    intersection[
                         self._map_scalar_to_text('intersection', ped_annots['attributes']['intersection'])] += 1
                     traffic_direction[self._map_scalar_to_text('traffic_direction',
                                                                ped_annots['attributes']['traffic_direction'])] += 1
