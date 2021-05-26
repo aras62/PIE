@@ -76,7 +76,7 @@ PIE_clips/set01/video_0001.mp4
 PIE_clips/set01/video_0002.mp4
 ...
 ```
-To download the videos, either run script `download_clips.sh` or manually download the clips from [here](http://data.nvision2.eecs.yorku.ca/PIE_dataset/PIE_clips/).
+To download the videos, either run script `download_clips.sh` or manually download the clips from [here](http://data.nvision2.eecs.yorku.ca/PIE_dataset/PIE_clips/) or [here](https://www.dropbox.com/sh/1th9hjcrce8sof1/AADKIF9itB7KmRvgH4iQxvCpa?dl=0).
 
 <a name="interface"></a>
 # Interface
