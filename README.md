@@ -168,7 +168,7 @@ year = {2019}
 <a name="authors"></a>
 ## Authors
 
-* **[Amir Rasouli](http://www.cse.yorku.ca/~aras/index.html)**
+* **[Amir Rasouli](https://aras62.github.io/)**
 * **[Iuliia Kotseruba](http://www.cse.yorku.ca/~yulia_k/)**
 
 Please send an email to yulia_k@eecs.yorku.ca or arasouli.ai@gmail.com if there are any problems with downloading or using the data.
