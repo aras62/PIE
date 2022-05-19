@@ -58,7 +58,7 @@ The labels include
 * gender: `male`, `female`.
 * id: Pedestrian's id.
 * num_lanes: scalar value, e.g. 2, 4.
-* signalized: Indicates whether the crosswalk is signalized. Options are `n/a` (no signal), `C` (crosswalk lines or sign), `S` (signal) and `CS` (signal and crosswalk lines or sign).
+* signalized: Indicates whether the crosswalk is signalized. Options are `n/a` (no signal, no crosswalk), `C` (crosswalk lines or pedestrian crossing sign), `S` (signal or stop sign) and `CS` (crosswalk lines or crossing sign combined with traffic lights or stop sign).
 * traffic_direction: `OW` (one-way) or `TW` (two-way).
 * intersection: Specifies the type of intersection. Options are `midblock`, `T`, `T-right`, `T-left`, `four-way`.
 * crossing: `1` (crossing), `0` (not crossing), `-1` (irrelevant).
