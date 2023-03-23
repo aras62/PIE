@@ -38,7 +38,7 @@ Objects are annotated with bounding boxes using two-point coordinates (top-left,
 - 1 - partially occluded (between 25% and 75% of the bbox area is occluded)
 - 2 - fully occluded (>75% of the bbox area is occluded). 
 
-Other types of objects have binary occlusion labels: 0 (fully visible or partially ocluded) or 1 (fully occluded).
+Other types of objects have binary occlusion labels: 0 (fully visible) or 1 (partially or fully occluded).
 
 Depending on the type of object additional information is provided for each bounding box (where applicable):
 * pedestrian - textual labels for actions, gestures, looking, or crossing
