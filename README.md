@@ -10,8 +10,11 @@ This repository contains  annotations for the Pedestrian Intention Estimation ([
 
 ### Table of contents
 * [Annotations](#annotations)
+	* [Spatial annotations](#spatial)
+	* [Object attributes](#attributes)
+	* [Ego-vehicle information](#vehicle)
 * [Video clips](#clips)
-* [Interface](#interface)
+* [Data interface](#interface)
 	* [Dependencies](#dependencies)
 	* [Extracting images](#extracting)
 	* [Using the interface](#usage)
@@ -23,22 +26,27 @@ This repository contains  annotations for the Pedestrian Intention Estimation ([
 
 <a name="annotations"></a>
 # Annotations
-PIE annotations are organized according to sets and video clip names. There are 6 types of labels and each has a unique id in the form of `<set_id>_<video_id>_<object_id>`.
-Traffic element ids are also tagged with the the initials of the corresponding object, e.g. tl for traffic lights. 
 
-All samples are annotated with bounding boxes using two-point coordinates (top-left, bottom-right) `[x1, y1, x2, y2]`. The bounding boxes have corresponding occlusion tags.
-The occlusion values for pedestrians are either 0 (not occluded), 1 (partially occluded >25%) or 2 (fully occluded >75%). Occlusion for other
-labels are either 0 (not occluded) or 1 (occluded).
+There are three types of annotations in the PIE dataset: spatial annotations with text labels, object attributes, ego-vehicle information <br/>
 
-There are three types of labels:<br/>
-**Annotations**: These include object bounding box coordinates, occlusion information and frame id. Depending on the type of object additional information is available:
+<a name="spatial"></a>
+### Spatial annotations
+Spatial annotations are organized according to sets and video clip names. Six types of objects (pedestrian, vehicle, traffic_light, sign, crosswalk, transit station) are annotated with bounding boxes and each has a unique id in the form of `<set_id>_<video_id>_<object_id>`, e.g. pedestrian with id `1_2_50` is found in video 2 of set 1. Object ids for traffic infrastructure objects are also tagged with the the initials of the corresponding object, e.g. `tl` for traffic lights. 
 
-* pedestrian
+Objects are annotated with bounding boxes using two-point coordinates (top-left, bottom-right) `[x1, y1, x2, y2]`. The bounding boxes for pedestrians have corresponding occlusion tags with the following numeric values: 
+- 0 - not occluded (pedestrian is fully visible or <25% of the bbox area is occluded);
+- 1 - partially occluded (between 25% and 75% of the bbox area is occluded)
+- 2 - fully occluded (>75% of the bbox area is occluded). 
+
+Other types of objects have binary occlusion labels: 0 (fully visible or partially ocluded) or 1 (fully occluded).
+
+Depending on the type of object additional information is provided for each bounding box (where applicable):
+* pedestrian - textual labels for actions, gestures, looking, or crossing
     * Action: Whether the pedestrian is `walking` or `standing`
     * Gesture: The type of gestures exhibited by the pedestrian. The gestures include  
     `hand_ack` (pedestrian is acknowledging by hand gesture),`hand_yield` (pedestrian is yielding by hand gesture), 
     `hand_rightofway` (pedestrian is giving right of way by hand gesture), `nod`, or `other`.
-    * Look: Whether pedestrian is `looking` or `not-looking`.
+    * Look: Whether pedestrian is `looking` or `not-looking` in the direction of the ego-vehicle.
     * Cross: Whether pedestrian is `not-crossing`, `crossing` the path of the ego-vehicle and `crossing-irrelevant` which indicates that the pedestrian is crossing the road but not in the path of the ego-vehicle.
 * vehicle
     * Type: The type of vehicle. The options are `car`, `truck`, `bus`, `train`, `bicycle` and `bike`.<br/>
@@ -47,28 +55,43 @@ There are three types of labels:<br/>
     * State: The state of the traffic light. The options are `red`, `yellow` and `green`.
 * sign
     * Type: The type of sign. The options are `ped_blue`, `ped_yellow`, `ped_white`, `ped_text`, `stop_sign`, `bus_stop`, `train_stop`, `construction`, `other`.
-* crosswalk
+* crosswalk - none
 * transit_station
     * bus or streetcar station
 
-These annotations are one per frame per label.<br/>
-**Attributes**: These include information regarding pedestrians' demographics, crossing point, crossing characteristics, etc. 
-The labels include
-* age:`child`, `adult` and `senior`.
-* gender: `male`, `female`.
+<a name="attributes"></a>
+### Object attributes
+These include information regarding pedestrians' demographics, crossing point, crossing characteristics, etc. 
+This information is provided for each pedestrian track:
+* age: `child`, `adult` or `senior`.
+* gender: `male` or `female`.
 * id: Pedestrian's id.
-* num_lanes: scalar value, e.g. 2, 4.
-* signalized: Indicates whether the crosswalk is signalized. Options are `n/a` (no signal, no crosswalk), `C` (crosswalk lines or pedestrian crossing sign), `S` (signal or stop sign) and `CS` (crosswalk lines or crossing sign combined with traffic lights or stop sign).
+* num_lanes: Scalar value, e.g. 2, 4, indicating the number of lanes at the point of crossing
+* signalized: Indicates whether the crosswalk is signalized. Options are `n/a` (no signal, no crosswalk), `C` (crosswalk lines or pedestrian crossing sign), `S` (signal or stop sign) and `CS` (crosswalk or crossing sign combined with traffic lights or stop sign).
 * traffic_direction: `OW` (one-way) or `TW` (two-way).
-* intersection: Specifies the type of intersection. Options are `midblock`, `T`, `T-right`, `T-left`, `four-way`.
-* crossing: `1` (crossing), `0` (not crossing), `-1` (irrelevant).
-* exp_start_point: The starting frame of the experiment 
-* critical_point: The last frame of the experiment
-* intention_prob: A value in range `[0,1]` indicating the average responses for the pedestrian's intention. 
+* intersection: Specifies the type of intersection: `midblock`, `T`, `T-right`, `T-left`, `four-way`.
+* crossing: `1` (crossing), `0` (not crossing), `-1` (irrelevant). This indicates whether the pedestrian was observed crossing the road in front of the ego-vehicle. Irrelevant pedestrians are those judged as not intending to cross but standing close to the road, e.g. waiting for a bus or hailing a taxi.
+* exp_start_point: The starting frame of the clip used for human experiment (see the paper for details)
+* critical_point: The last frame of the clip used for human experiment
+* intention_prob: A value in range `[0,1]` indicating the average human responses for the pedestrian's intention. This value is estimated intention of a given pedestrian to cross *prior to the critical point*. Therefore, there is a *single intention estimate per each pedestrian track*.
 * crossing_point: The frame at which the pedestrian starts crossing. In the cases where the pedestrians do not cross the road, the last frame - 3 is selected. 
 
-**Vehicle**: ego-vehicle sensor data. The options are
- `GPS_speed`, `OBD_speed`, `heading_angle`, `latitude`, `longitude`, `pitch`, `roll`, `yaw`, `acceleration` and `gyroscope`.<br/>
+**Note regarding action/intention distinction**: In the PIE dataset we distinguish between intention to cross and crossing action. We consider intention as a mental state that preceds the action but does not necessarily cause the action immediately, e.g. if it is dangerous to do so. In the case of crossing the road this leads to three possible scenarios:
+
+- Pedestrian intends (wants) to cross and crosses because the conditions are favorable (e.g. green light for pedestrian or the ego-vehicle yields);
+- Pedestrian intends to cross but cannot cross since the conditions prevent them from doing so (e.g. red light, being blocked by other pedestrians or vehicles not yielding);
+- Pedestrian does not intend to cross (e.g. is talking to another person or waiting for a bus at the bus station) and therefore does not cross.
+
+These examples illustrate that intention and action are related but are not the same. However, in the literature, these terms are often used interchangeably. Therefore, when using PIE or comparing the results of the models trained on PIE dataset it is important to understand the difference and clarify what data was used for training. 
+
+Note that the volume of training data available for action and intention is different. Action labels (moving, crossing, looking, gesturing) are provided for each bounding box in the pedestrian track (where applicable). An intention label is provided only for a set of frames *preceding the observed action* (crossing or not crossing).
+
+In general, models that are trained on action labels will not be comparable to models trained on intention labels and will not output the same results. For example, intention estimation sub-model in [PIEPredict](https://github.com/aras62/PIEPredict) is trained on intention data (i.e. only on frames preceding the crossing action and on intention labels) and predicts intention to cross, not action. It will classify pedestrian waiting at the red traffic light as *intending to cross* even though the pedestrian is not observed crossing. An action prediction algorithm (e.g. [PCPA](https://github.com/ykotseruba/PedestrianActionBenchmark)) in this case will output *not crossing* action. Both outputs are correct but mean different things and should not be compared. 
+
+<a name="vehicle"></a>
+### Ego-vehicle information
+Ego-vehicle information is OBD sensor output provided per-frame. The following properties are available:
+ `GPS_speed` (km/h), `OBD_speed` (km/h), `heading_angle`, `latitude`, `longitude`, `pitch`, `roll`, `yaw`, `acceleration` and `gyroscope`.<br/>
 
 <a name="clips"></a>
 # Video clips
@@ -81,7 +104,9 @@ PIE_clips/set01/video_0002.mp4
 To download the videos, either run script `download_clips.sh` or manually download the clips from [here](http://data.nvision2.eecs.yorku.ca/PIE_dataset/PIE_clips/) or [here](https://www.dropbox.com/sh/1th9hjcrce8sof1/AADKIF9itB7KmRvgH4iQxvCpa?dl=0).
 
 <a name="interface"></a>
-# Interface
+# Data interface
+
+Data interface is provided for loading and filtering the annotations for training models.
 
 <a name="dependencies"></a>
 ## Dependencies
