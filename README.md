@@ -76,7 +76,7 @@ This information is provided for each pedestrian track:
 * intention_prob: A value in range `[0,1]` indicating the average human responses for the pedestrian's intention. This value is estimated intention of a given pedestrian to cross *prior to the critical point*. Therefore, there is a *single intention estimate per each pedestrian track*.
 * crossing_point: The frame at which the pedestrian starts crossing. In the cases where the pedestrians do not cross the road, the last frame - 3 is selected. 
 
-**Note regarding action/intention distinction**: In the PIE dataset we distinguish between intention to cross and crossing action. We consider intention as a mental state that preceds the action but does not necessarily cause the action immediately, e.g. if it is dangerous to do so. In the case of crossing the road this leads to three possible scenarios:
+**Note regarding action/intention distinction**: In the PIE dataset we distinguish between intention to cross and crossing action. We consider intention as a mental state that precedes the action but does not necessarily cause the action immediately, e.g. if it is dangerous to do so. In the case of crossing the road this leads to three possible scenarios:
 
 - Pedestrian intends (wants) to cross and crosses because the conditions are favorable (e.g. green light for pedestrian or the ego-vehicle yields);
 - Pedestrian intends to cross but cannot cross since the conditions prevent them from doing so (e.g. red light, being blocked by other pedestrians or vehicles not yielding);
