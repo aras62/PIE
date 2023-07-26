@@ -6,7 +6,7 @@
 
 This repository contains  annotations for the Pedestrian Intention Estimation ([PIE](http://data.nvision2.eecs.yorku.ca/PIE_dataset/)) dataset. The annotations are in XML format and are accompanied by a python interface for processing.
 
-**Download links for videos:** [YorkU server](http://data.nvision2.eecs.yorku.ca/PIE_dataset/PIE_clips/) or [Dropbox](https://www.dropbox.com/sh/1th9hjcrce8sof1/AADKIF9itB7KmRvgH4iQxvCpa?dl=0)
+**Download links for videos:** [YorkU server](http://data.nvision2.eecs.yorku.ca/PIE_dataset/PIE_clips/)
 
 ### Table of contents
 * [Annotations](#annotations)
@@ -101,7 +101,7 @@ PIE_clips/set01/video_0001.mp4
 PIE_clips/set01/video_0002.mp4
 ...
 ```
-To download the videos, either run script `download_clips.sh` or manually download the clips from [here](http://data.nvision2.eecs.yorku.ca/PIE_dataset/PIE_clips/) or [here](https://www.dropbox.com/sh/1th9hjcrce8sof1/AADKIF9itB7KmRvgH4iQxvCpa?dl=0).
+To download the videos, either run script `download_clips.sh` or manually download the clips from [here](http://data.nvision2.eecs.yorku.ca/PIE_dataset/PIE_clips/).
 
 <a name="interface"></a>
 # Data interface
