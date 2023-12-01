@@ -4,7 +4,9 @@
 </p>
 <br/><br/>
 
-This repository contains  annotations for the Pedestrian Intention Estimation ([PIE](http://data.nvision2.eecs.yorku.ca/PIE_dataset/)) dataset. The annotations are in XML format and are accompanied by a python interface for processing.
+This repository contains  annotations for the Pedestrian Intention Estimation ([PIE](http://data.nvision2.eecs.yorku.ca/PIE_dataset/)) dataset. The annotations are in XML format and are accompanied by a python interface for processing. 
+
+**Paper:** A. Rasouli, I. Kotseruba, T. Kunic, J.K. Tsotsos, PIE: A Large-Scale Dataset and Models for Pedestrian Intention Estimation, ICCV, 2019 (Oral) [pdf](https://openaccess.thecvf.com/content_ICCV_2019/papers/Rasouli_PIE_A_Large-Scale_Dataset_and_Models_for_Pedestrian_Intention_Estimation_ICCV_2019_paper.pdf)
 
 **Download links for videos:** [YorkU server](http://data.nvision2.eecs.yorku.ca/PIE_dataset/PIE_clips/)
 
