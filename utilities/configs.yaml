@@ -1,0 +1,182 @@
+scaled: true # whether to report scaled metrics. For trajectory metrics only
+write_to_file: true # whether write the results to a file
+save_file_path: eval_res # the file names to save evaluation results
+adj_area: true # to handle area calculation for samples on the edge of the screen
+adj_wh_ratio: 0.34 # the ratio of width to height for adjustment 0.34 default based on PIE and JAAD
+# Parameters for computing the metric weights for action prediction and risk assessment tasks
+# See the paper "Diving Deeper Into Pedestrian Behavior Understanding: Intention Estimation, Action Prediction,
+# and Event Risk Assessment"
+risk_w_sigma: 0.5
+act_w_sigma: 0.3
+# Scenario specification. Set to null for only final evaluation is recorded as 'all', 'all'
+# Multiple factor criteria, e.g. single and double factor can be combined in to a single list ofd scenarios
+scenarios:
+    # Scenarios with single factors for trajectory prediction
+    traj_sf: [['ped_scale', {scales:[50, 80, 100, 150, 200, 300]}],
+              ['ped_state', {'act_type': 'actions', 'obs_length': 15}], 
+              ['veh_speed', {'speeds':[0, 5, 10, 20, 30]}], 
+              ['veh_speed_change', {'speed_th' : 5, 'obs_length': 15}], 
+              ['veh_turns', {'turn_thr': 5}]
+              ]
+    # Scenarios with two factors for trajectory prediction
+    traj_tf: [[['ped_scale','veh_speed'] , {'scales': [50, 80, 100, 150, 200, 300], 'speeds': [0, 5, 10, 20, 30]}],
+              [['ped_state','veh_speed'] , {'act_type': 'actions', 'obs_length': 15, 'speeds': [0, 5, 10, 20, 30]}]
+              ]
+    # Scenarios with single factors for action prediction
+    act_sf: [['ped_scale', {scales:[80, 100, 150, 200, 300]}],
+              ['ped_state', {'act_type': 'actions', 'obs_length': 0}],
+              ['veh_speed', {'speeds':[0, 5, 10, 20, 30]}], 
+              ['signal',{ref_type: 'avg', group_tfl: True}], 
+              ['road_type',{group_road: 'True'}] 
+              ]
+dataset_opts: # This is for datasets interfaces (see dataset interfaces for details)
+  data_split_type: default # random, default, kfold
+  height_rng: [0, inf]
+  fstride: 1
+  kfold_params:
+    fold: 1
+    num_folds: 5
+  min_track_size: 75
+  random_params:
+    ratios: null
+    regen_data: false
+    val_data: false
+  sample_type: all # all or beh This is only for JAAD
+  seq_type: all # crossing, intention, trajectory, all
+  squarify_ratio: 0
+  subset: default
+data_gen_opts:
+  dataset: PIE
+  sequence_type: trajectory  #intention or others (action, trajectory or risk)
+  obs_len: 15
+  # length of the prediction for trajectory task
+  # if TTE is set, pred_len must be <= min(TTE)
+  # set 30 for action prediction tasks and 45 for trajectory
+  pred_len: 45
+  # set [] or null for trajectory. For action default is [30,90]
+  # for visualization of actions:
+  #    [num1,num2] displays predictions in a range before fixing the final prediction
+  #     num: displays only a single prediction and fixes it at the given time, i.e. only make one prediction for the whole sequence
+  #     null: continuously predicts and displays
+  time_to_event: [] # Default for action prediction [30,90] and [] for trajectory
+  overlap: 0.5 # Overlap of tracks extracted from sequences. 0.3 for action, intention and risk models, 0.5 for trajectory
+  overlap_test: true # whether test samples should have overlap
+  grid_resolution: 60 # resolution of grid (see "Bifold and semantic reasoning for pedestrian behavior prediction")
+  # For action prediction only: if set to true sequences shorter
+  # than obs_len + TTE (larger) will be excluded
+  exclude_short_seq: False
+  num_risk_regions: 12 # number of risk regions, for evaluation the weighting of regions is symmetric |0|1|2|1|0|
+  risk_horizon: 90 # risk prediction horizon
+  num_int_class: 3 # number of classes to divide intention probabilities into.
+  data_types: default # data types for visualization, e.g.['norm_bbox', 'bbox', 'scaled_bbox', 'actions', 'vehicle', 'yrp']
+  obs_input_type: [norm_bbox] # input data type, e.g. bbox, actions, norm_bbox, vehicle
+  pred_output_type: [norm_bbox]  # type of prediction data, e.g. norm_bbox, scaled_bbox, bbox
+  dec_input_type: []  # data types inputting directly to the decoder. This will extract from prediction portion of tracks
+  scale_coord:
+    adj_area: true # to handle area calculation for samples on the edge of the screen
+    wh_ratio: 0.34 # the ratio of width to height for adjustment
+  # What frame of reference to use for normalization, to subtract from the sequence
+  # first, and last correspond to the frames' positions and obs refers to time t (last observation frame)
+  norm_pos: 'obs' # What reference frame use for normalization, first, last, obs
+  vehicle_data:
+    relative: false # use relative changes not absolute
+    filter_type: 'low_pass' # filter type: median, low_pass
+    sensors: ['gyro', 'acc'] # yrp (yaw, roll, pitch), gyro (gyroscope X, Y, Z), acc (acceleration), heading_angle
+    root_path: 'filter_data' # root folder to save the filtered data
+    median_filter:
+      kernel_size: 5 #  if set to a scalar, it applies a median filter to values
+    low_pass_filter:
+      order: 4
+      freq: 5 # critical frequency
+      fs: 30 # sampling frequency
+    types: ['norm_coord','speed', 'accY','accZ', 'gyroZ'] # vehicle data types to use
+vis_config: 
+  vis_regen: true # true: will overwrite the existing video. False: will skip if the file exists
+  max_count: null # total number of frames to record. If null all is used
+  traj_mode: line # how to draw trajectory points: based on center (circle, line) or full(box). For box, only first and last are shown
+  # The color of trajectories
+  # In the case of box option, colors are randomly generated for pedestrians
+  traj_color: 
+    predict: 'blue'
+    gt: 'orange'
+  save_results: true #whether to save the results
+  save_as_video: true # whether to save the results as video or images
+  max_traj_length: 45 # max length of trajectories to display. If set to null, max length is displayed
+  save_path: 'demo_videos' # save path root folder for visualization
+  txt_ext: '' # additional text to be added to the saved file
+  scale: 0.5 # scale of the images or video
+  vid_ids: null # list videos to visualize
+  set_ids: null # list of sets to visualize
+  # list of local (per set/video) or global (over all sequences) sequence ids
+  # If set and video ids are null, global ids are used
+  seq_ids: null 
+  ped_ids: null # list of pedestrian instances (based on their id) to visualize
+  frame_rate: 30.0 #frame rate of the video
+  intensity_base: 200  # intensity of the text
+  video_format:  'mp4'  # video format: mp4 or avi
+  codec: 'mp4v' # coded format
+  image_format: 'png' # image format
+  model_srate: 1 # model sampling rate
+  add_text: False # whether add text to visualized actions
+  line_width: 3 # width for line option
+  box_width: 3 # width for box option
+  #w= x, h =y for axis
+graph_config:  # Configuration for data label visualization on graphsq
+  seq_frate: 30
+  # Only for 2D graphs
+  w_border: 130 # width (horizontal) border. This is the white space added to each side of the graph
+  h_border: 100 # height (vertical) border
+  tick_ln_len: 10 # the length of ticks on the axes
+  axis_ln_width: 3 # width of axes lines
+  hor_ln_width: 1 # width of horizontal lines appear on the graph
+  graph_clr: [0,0,0] # color of graph lines
+  text_scale: 1 # scale of the text to appear on the graph
+  # for both 2D and 3D
+  w_ax_step: 20 # number of steps to divide the width (horizontal) axis
+  h_ax_step: 10 # number of height (vertical) steps
+  z_ax_step: 10 # number of 3d axis steps
+  pt_clr: [200, 156, 100] # color of points on the graph
+  w_axis_txt: 'time(s)'
+  h_axis_txt: null # If none, vis_data label is used
+  z_axis_txt: null # If none, vis_data label is used
+  tick_txt_margin: 5 # margin of ticks text
+  axis_txt_margin: 20 # margin of the axis text next to the closest component of the axis
+  h_txt_decimal: 1 # number of decimals for the values on height (vertical axis)
+  w_txt_decimal: 1 # number of decimals for the values on width (horizontal axis)
+  z_txt_decimal: 1 # number of decimals for the values on 3rd
+
+  # Data to be visualized.
+  # Options:
+  # 'obd_speed'(or speed), 'gps_speed', 'acc', 'heading_angle'
+  vis_data_h: 'gyro'
+  vis_data_h_index: 1 # for data types with multiple values, e.g. gyro or yrp
+  vis_data_h_max: null # max value of height (vertical axis)
+  vis_data_h_min: null # min value of height (vertical axis)
+  vis_data_z_max: null # max value of Z
+  vis_data_z_min: null # min value of Z
+  vis_data_z: null # for z dimension data, e.g. 'obd_speed'. If set, graph will be 3D
+  vis_data_z_index: null
+beh_graph_config:  # configs for  behavioral visualization of data
+  seq_frate: 30 # sequence frequency
+  top_margin: 300 # the margin for clipping the image
+  #Valid only for JAAD dataset as not all samples have behavioral tags
+  beh_only: True 
+  # Threshold for determining accel/decel (only for PIE)
+  # This value is experimental and not accurate due to noise
+  acc_thr: 0.03 
+  # Only for 2D graph
+  w_border: 120 # width (horizontal) border. This is the white space added to each side of graph
+  h_border: 100 # height (vertical) border
+  bar_width: 20 # thickness of the horizontal bars at each step
+  tick_ln_len: 10 # the length of ticks on the axes
+  axis_ln_width: 3 # width of axes lines
+  hor_ln_width: 1 # width of horizontal lines appear on the graph
+  graph_clr: [0,0,0] # color of graph lines,
+  text_scale: 1 # scale of the text to appear on the graph
+  # For both 2D and 3D
+  pt_clr: [200, 156, 100] # color of points on the graph
+  w_axis_txt: 'time(s)'
+  tick_txt_margin: 5 # margin of ticks text
+  axis_txt_margin: 20 # margin of the axis text next to the left side of the image
+  w_ax_step: 20 # number of steps to divide the width (horizontal) axis
+  w_txt_decimal: 1 # number of decimals for the values on horizontal axis
