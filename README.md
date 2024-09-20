@@ -8,7 +8,13 @@ This repository contains code and annotations for the Pedestrian Intention Estim
 [A. Rasouli, I. Kotseruba, T. Kunic, J.K. Tsotsos, PIE: A Large-Scale Dataset and Models for Pedestrian Intention Estimation, ICCV, 2019](https://openaccess.thecvf.com/content_ICCV_2019/papers/Rasouli_PIE_A_Large-Scale_Dataset_and_Models_for_Pedestrian_Intention_Estimation_ICCV_2019_paper.pdf) and
 a series of scripts for visualization and scenario evaluation.
 
+### Download videos
+Videos are grouped into 6 sets corresponding to different routes driven in Toronto, Canada. 
 
+The total size of all video clips is approx. **74GB**.
+
+**Download links** [YorkU server](http://data.nvision2.eecs.yorku.ca/PIE_dataset/PIE_clips/) 
+[Google Drive](https://drive.google.com/drive/folders/180MXX1z3aicZMwYu2pCM0TamzUKT0L16?usp=drive_link)
 
 ### Content
 * [annotations](annotations/README.md#top): Contains the annotations and a script for extracting images from raw videos
