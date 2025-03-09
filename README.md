@@ -40,7 +40,7 @@ year = {2019}}
 * **[Amir Rasouli](https://aras62.github.io/)**
 * **[Iuliia Kotseruba](http://www.cse.yorku.ca/~yulia_k/)**
 
-Please send an email to yulia_k@eecs.yorku.ca or arasouli.ai@gmail.com if there are any problems with downloading or using the data.
+Please send an email to yulia84@yorku.ca or arasouli.ai@gmail.com if there are any problems with downloading or using the data.
 
 <a name="license"></a>
 ### License
